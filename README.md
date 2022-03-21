@@ -1,5 +1,7 @@
 # bodash
 
+[![Test](https://github.com/jnnl/bodash/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/jnnl/bodash/actions/workflows/test.yml)
+
 bodash (Blue Ocean dashboard) is a CLI dashboard for displaying Jenkins job states in your terminal using the [Blue Ocean REST API](https://plugins.jenkins.io/blueocean-rest/).
 
 By default, `bodash` queries `https://$BODASH_DOMAIN/blue/rest/users/$BODASH_USER/favorites` every 10 seconds

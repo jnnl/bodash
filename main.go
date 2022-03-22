@@ -37,7 +37,7 @@ type Config struct {
 var config Config = Config{
 	Debug:      false,
 	ShowHeader: false,
-	Interval:   time.Second * 10,
+	Interval:   0,
 	DateFormat: "2006-01-02T15:04:05.000-0700",
 	Domain:     "",
 	User:       "dashboard",
@@ -81,7 +81,11 @@ func (job *Job) PrintDebugInfo() {
 
 func main() {
 	ParseArgs()
-	RunDashboardLoop()
+	if config.Interval == 0 {
+		FetchAndPrint()
+	} else {
+		RunDashboardLoop()
+	}
 }
 
 func ParseArgs() {
@@ -101,7 +105,7 @@ func ParseArgs() {
 	AssertFlagArgProvided(config.Token, "-token")
 	AssertFlagArgProvided(config.User, "-user")
 
-	if config.Interval < time.Second {
+	if config.Interval != 0 && config.Interval < time.Second {
 		fmt.Println("error: argument for flag -interval cannot be shorter than 1s")
 		os.Exit(2)
 	}

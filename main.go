@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"reflect"
+	"runtime"
 	"sort"
 	"syscall"
 	"time"
@@ -137,9 +138,10 @@ func RunDashboardLoop() {
 
 func FetchAndPrint() {
 	jobs, err := FetchJobs()
-	c := exec.Command("/usr/bin/clear")
-	c.Stdout = os.Stdout
-	c.Run()
+
+	if config.Interval != 0 {
+		ClearTermScreen()
+	}
 
 	if err != nil {
 		fmt.Println("error:", err)
@@ -310,6 +312,34 @@ func ReadConfigStrFromEnv(key string, destination *string) {
 	if !reflect.ValueOf(value).IsZero() {
 		*destination = value
 	}
+}
+
+func ClearTermScreen() {
+	if IsUnixLikeOS() {
+		clear := exec.Command("clear")
+		clear.Stdout = os.Stdout
+		clear.Run()
+	} else if IsWindowsOS() {
+		clear := exec.Command("cmd", "/c", "cls")
+		clear.Stdout = os.Stdout
+		clear.Run()
+	} else {
+		fmt.Printf("\033[2J\033[0;0H")
+	}
+}
+
+func IsUnixLikeOS() bool {
+	systems := []string{"android", "darwin", "dragonfly", "freebsd", "linux", "netbsd", "openbsd"}
+	for _, system := range systems {
+		if runtime.GOOS == system {
+			return true
+		}
+	}
+	return false
+}
+
+func IsWindowsOS() bool {
+	return runtime.GOOS == "windows"
 }
 
 func EnableTermCursor() {

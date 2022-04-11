@@ -29,7 +29,7 @@ type Config struct {
 	Domain     string
 	User       string
 	Token      string
-	Url        string
+	URL        string
 	UserAgent  string
 	Client     http.Client
 }
@@ -42,7 +42,7 @@ var config Config = Config{
 	Domain:     "",
 	User:       "dashboard",
 	Token:      "",
-	Url:        "https://%s/blue/rest/users/%s/favorites/",
+	URL:        "https://%s/blue/rest/users/%s/favorites/",
 	UserAgent:  "bodash/0.1",
 	Client:     http.Client{Timeout: time.Second * 5},
 }
@@ -51,7 +51,7 @@ type FavoriteWrapper struct {
 	FavoriteItem struct {
 		DisplayName string `json:"displayName"`
 		LatestRun   struct {
-			Id        string `json:"id"`
+			ID        string `json:"id"`
 			StartTime string `json:"startTime"`
 			EndTime   string `json:"endTime"`
 			Result    string `json:"result"`
@@ -110,7 +110,7 @@ func ParseArgs() {
 		os.Exit(2)
 	}
 
-	config.Url = fmt.Sprintf(config.Url, config.Domain, config.User)
+	config.URL = fmt.Sprintf(config.URL, config.Domain, config.User)
 
 	if config.Debug {
 		fmt.Println("debug:", config.Debug)
@@ -118,7 +118,7 @@ func ParseArgs() {
 		fmt.Println("header:", config.ShowHeader)
 		fmt.Println("interval:", config.Interval)
 		fmt.Println("token:", config.Token)
-		fmt.Println("url:", config.Url)
+		fmt.Println("url:", config.URL)
 		fmt.Println("user:", config.User)
 	}
 }
@@ -158,7 +158,7 @@ func FetchJobs() ([]Job, error) {
 	var favorites []FavoriteWrapper
 	var jobs []Job
 
-	req, reqErr := http.NewRequest(http.MethodGet, config.Url, nil)
+	req, reqErr := http.NewRequest(http.MethodGet, config.URL, nil)
 	if reqErr != nil {
 		return nil, reqErr
 	}
@@ -192,7 +192,7 @@ func FetchJobs() ([]Job, error) {
 		item := fav.FavoriteItem
 		job := Job{
 			DisplayName: item.DisplayName,
-			ID:          item.LatestRun.Id,
+			ID:          item.LatestRun.ID,
 			StartTime:   item.LatestRun.StartTime,
 			EndTime:     item.LatestRun.EndTime,
 			Result:      item.LatestRun.Result,

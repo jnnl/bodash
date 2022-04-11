@@ -218,11 +218,14 @@ func SortJobs(jobs []Job) {
 		}
 		var a, b time.Time
 		var aErr, bErr error
-		if jobA.State == "RUNNING" && jobB.State == "RUNNING" {
+		if jobA.State == "RUNNING" {
 			a, aErr = ParseDate(jobA.StartTime)
-			b, bErr = ParseDate(jobB.StartTime)
 		} else {
 			a, aErr = ParseDate(jobA.EndTime)
+		}
+		if jobB.State == "RUNNING" {
+			b, bErr = ParseDate(jobB.StartTime)
+		} else {
 			b, bErr = ParseDate(jobB.EndTime)
 		}
 		if aErr != nil || bErr != nil {

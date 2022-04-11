@@ -141,7 +141,7 @@ func RunDashboardLoop() {
 }
 
 func FetchAndPrint() {
-	jobs, err := FetchJobs()
+	jobs, err := FetchJobs(config.URL)
 
 	if config.Interval != 0 {
 		ClearTermScreen()
@@ -154,11 +154,11 @@ func FetchAndPrint() {
 	}
 }
 
-func FetchJobs() ([]Job, error) {
+func FetchJobs(url string) ([]Job, error) {
 	var favorites []FavoriteWrapper
 	var jobs []Job
 
-	req, reqErr := http.NewRequest(http.MethodGet, config.URL, nil)
+	req, reqErr := http.NewRequest(http.MethodGet, url, nil)
 	if reqErr != nil {
 		return nil, reqErr
 	}

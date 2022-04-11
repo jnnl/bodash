@@ -1,6 +1,8 @@
 package main
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 )
@@ -44,6 +46,92 @@ func MockJobs() []Job {
 			Result:      "UNKNOWN",
 			State:       "RUNNING",
 		},
+	}
+}
+
+func MockJobsResponse() []byte {
+	return []byte(`[
+			{ "item": {
+				"displayName": "Test 1",
+				"latestRun": {
+					"id": "1",
+					"startTime": "2022-01-01T00:00:00.000-0000",
+					"endTime": "2022-01-01T00:01:00.000-0000",
+					"result": "SUCCESS",
+					"state": "FINISHED"
+				}
+			}},
+			{ "item": {
+				"displayName": "Test 2",
+				"latestRun": {
+					"id": "2",
+					"startTime": "2022-01-01T01:00:00.000-0000",
+					"result": "UNKNOWN",
+					"state": "RUNNING"
+				}
+			}},
+			{ "item": {
+				"displayName": "Test 3",
+				"latestRun": {
+					"id": "2",
+					"startTime": "2022-01-01T02:00:00.000-0000",
+					"endTime": "2022-01-01T02:01:00.000-0000",
+					"result": "FAILURE",
+					"state": "FINISHED"
+				}
+			}}
+			]`)
+}
+
+func TestFetchJobs(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authString := "Basic ZGFzaGJvYXJkOg=="
+		if auth := r.Header.Get("Authorization"); auth != authString {
+			t.Errorf("Request header Authorization = %s, want %s\n", auth, authString)
+		}
+
+		if ua := r.Header.Get("User-Agent"); ua != config.UserAgent {
+			t.Errorf("Request header User-Agent = %s, want %s\n", ua, config.UserAgent)
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Write(MockJobsResponse())
+	}))
+
+	defer server.Close()
+
+	jobs, err := FetchJobs(server.URL)
+
+	if err != nil {
+		t.Errorf("FetchJobs error = \"%s\", want nil\n", err)
+	}
+
+	if jobsLength := len(jobs); jobsLength != 3 {
+		t.Errorf("Response jobs length = %d, want %d\n", jobsLength, 3)
+	}
+
+	firstJob := jobs[0]
+	wantFirstJob := Job{
+		ID:          "2",
+		DisplayName: "Test 2",
+		StartTime:   "2022-01-01T01:00:00.000-0000",
+		Result:      "UNKNOWN",
+		State:       "RUNNING",
+	}
+	if firstJob.ID != wantFirstJob.ID {
+		t.Errorf("Response jobs[0].ID = %s, want %s\n", firstJob.ID, wantFirstJob.ID)
+	}
+	if firstJob.DisplayName != wantFirstJob.DisplayName {
+		t.Errorf("Response jobs[0].DisplayName = %s, want %s\n", firstJob.DisplayName, wantFirstJob.DisplayName)
+	}
+	if firstJob.StartTime != wantFirstJob.StartTime {
+		t.Errorf("Response jobs[0].StartTime = %s, want %s\n", firstJob.StartTime, wantFirstJob.StartTime)
+	}
+	if firstJob.Result != wantFirstJob.Result {
+		t.Errorf("Response jobs[0].Result = %s, want %s\n", firstJob.Result, wantFirstJob.Result)
+	}
+	if firstJob.State != wantFirstJob.State {
+		t.Errorf("Response jobs[0].State = %s, want %s\n", firstJob.State, wantFirstJob.State)
 	}
 }
 

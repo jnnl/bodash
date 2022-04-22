@@ -241,7 +241,7 @@ func PrintJobs(jobs []Job) {
 	now := time.Now()
 
 	if config.ShowHeader {
-		currentTime := time.Now().Format(time.RFC1123)
+		currentTime := now.Format(time.RFC1123)
 		table.AddHeader(currentTime)
 	}
 

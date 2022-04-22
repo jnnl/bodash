@@ -43,7 +43,7 @@ var config Config = Config{
 	User:       "dashboard",
 	Token:      "",
 	URL:        "https://%s/blue/rest/users/%s/favorites/",
-	UserAgent:  "bodash/0.1",
+	UserAgent:  "bodash/0.2",
 	Client:     http.Client{Timeout: time.Second * 5},
 }
 

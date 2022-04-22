@@ -172,15 +172,16 @@ func FetchJobs(url string) ([]Job, error) {
 	if resp.StatusCode != 200 {
 		return nil, errors.New(fmt.Sprintf("API returned status code %v", resp.StatusCode))
 	}
-	if resp.Body == nil {
-		return nil, errors.New("API returned empty response body")
-	}
 
 	defer resp.Body.Close()
 
 	body, readErr := io.ReadAll(resp.Body)
 	if readErr != nil {
 		return nil, readErr
+	}
+
+	if len(body) == 0 {
+		return nil, errors.New("API returned empty response body")
 	}
 
 	jsonErr := json.Unmarshal(body, &favorites)

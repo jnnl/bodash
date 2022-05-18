@@ -3,7 +3,7 @@
 from itertools import product
 from subprocess import call, STDOUT
 
-version = '0.2'
+version = '0.3'
 progname = 'bodash'
 go_os = ['darwin', 'linux', 'windows']
 go_arch = ['amd64', 'arm64']

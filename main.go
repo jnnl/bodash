@@ -169,11 +169,12 @@ func FetchJobs(url string) ([]Job, error) {
 	if httpErr != nil {
 		return nil, httpErr
 	}
+
+	defer resp.Body.Close()
+
 	if resp.StatusCode != 200 {
 		return nil, errors.New(fmt.Sprintf("API returned status code %v", resp.StatusCode))
 	}
-
-	defer resp.Body.Close()
 
 	body, readErr := io.ReadAll(resp.Body)
 	if readErr != nil {

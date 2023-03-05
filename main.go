@@ -106,7 +106,7 @@ func ParseArgs() {
 	AssertFlagArgProvided(config.User, "-user")
 
 	if config.Interval != 0 && config.Interval < time.Second {
-		fmt.Println("error: argument for flag -interval cannot be shorter than 1s")
+		fmt.Fprintln(os.Stderr, "error: argument for flag -interval cannot be shorter than 1s")
 		os.Exit(2)
 	}
 
@@ -148,7 +148,7 @@ func FetchAndPrint() {
 	}
 
 	if err != nil {
-		fmt.Println("error:", err)
+		fmt.Fprintln(os.Stderr, "error:", err)
 	} else {
 		PrintJobs(jobs)
 	}
@@ -311,7 +311,7 @@ func ColorizedJobState(state string) string {
 
 func AssertFlagArgProvided(arg any, flag string) {
 	if reflect.ValueOf(arg).IsZero() {
-		fmt.Println("error: missing required argument for flag", flag)
+		fmt.Fprintln(os.Stderr, "error: missing required argument for flag", flag)
 		os.Exit(2)
 	}
 }

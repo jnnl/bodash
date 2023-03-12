@@ -22,29 +22,31 @@ import (
 )
 
 type Config struct {
-	Debug      bool
-	ShowHeader bool
-	Interval   time.Duration
-	DateFormat string
-	Domain     string
-	User       string
-	Token      string
-	URL        string
-	UserAgent  string
-	Client     http.Client
+	Debug         bool
+	ShowHeader    bool
+	Interval      time.Duration
+	DateFormat    string
+	DateOutFormat string
+	Domain        string
+	User          string
+	Token         string
+	URL           string
+	UserAgent     string
+	Client        http.Client
 }
 
 var config Config = Config{
-	Debug:      false,
-	ShowHeader: false,
-	Interval:   0,
-	DateFormat: "2006-01-02T15:04:05.000-0700",
-	Domain:     "",
-	User:       "dashboard",
-	Token:      "",
-	URL:        "https://%s/blue/rest/users/%s/favorites/",
-	UserAgent:  "bodash/0.3",
-	Client:     http.Client{Timeout: time.Second * 5},
+	Debug:         false,
+	ShowHeader:    false,
+	Interval:      0,
+	DateFormat:    "2006-01-02T15:04:05.000-0700",
+	DateOutFormat: time.RFC1123,
+	Domain:        "",
+	User:          "dashboard",
+	Token:         "",
+	URL:           "https://%s/blue/rest/users/%s/favorites/",
+	UserAgent:     "bodash/0.3",
+	Client:        http.Client{Timeout: time.Second * 5},
 }
 
 type FavoriteWrapper struct {
@@ -99,6 +101,7 @@ func ParseArgs() {
 	flag.DurationVar(&config.Interval, "interval", config.Interval, "dashboard refresh interval")
 	flag.StringVar(&config.Token, "token", config.Token, "Blue Ocean user API token")
 	flag.StringVar(&config.User, "user", config.User, "Blue Ocean user")
+	flag.StringVar(&config.DateOutFormat, "dateoutformat", config.DateOutFormat, "header output date format")
 	flag.Parse()
 
 	AssertFlagArgProvided(config.Domain, "-domain")
@@ -120,6 +123,7 @@ func ParseArgs() {
 		fmt.Println("token:", config.Token)
 		fmt.Println("url:", config.URL)
 		fmt.Println("user:", config.User)
+		fmt.Println("dateoutformat:", config.DateOutFormat)
 	}
 }
 
@@ -242,7 +246,7 @@ func PrintJobs(jobs []Job) {
 	now := time.Now()
 
 	if config.ShowHeader {
-		currentTime := now.Format(time.RFC1123)
+		currentTime := now.Format(config.DateOutFormat)
 		table.AddHeader(currentTime)
 	}
 

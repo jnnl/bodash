@@ -91,12 +91,14 @@ func main() {
 }
 
 func ParseArgs() {
+	ReadConfigStrFromEnv("BODASH_URL", &config.URL)
 	ReadConfigStrFromEnv("BODASH_DOMAIN", &config.Domain)
 	ReadConfigStrFromEnv("BODASH_TOKEN", &config.Token)
 	ReadConfigStrFromEnv("BODASH_USER", &config.User)
 
 	flag.BoolVar(&config.Debug, "debug", config.Debug, "show debug info")
-	flag.StringVar(&config.Domain, "domain", config.Domain, "Blue Ocean domain (e.g. myjenkinsdomain.example)")
+	flag.StringVar(&config.URL, "url", config.URL, "Blue Ocean favorites url (e.g https://ci.example/blue/rest/users/mydashboarduser/favorites)")
+	flag.StringVar(&config.Domain, "domain", config.Domain, "Blue Ocean domain (e.g. ci.example)")
 	flag.BoolVar(&config.ShowHeader, "header", config.ShowHeader, "show dashboard header row")
 	flag.DurationVar(&config.Interval, "interval", config.Interval, "dashboard refresh interval")
 	flag.StringVar(&config.Token, "token", config.Token, "Blue Ocean user API token")
@@ -104,16 +106,18 @@ func ParseArgs() {
 	flag.StringVar(&config.DateOutFormat, "dateoutformat", config.DateOutFormat, "header output date format")
 	flag.Parse()
 
-	AssertFlagArgProvided(config.Domain, "-domain")
-	AssertFlagArgProvided(config.Token, "-token")
 	AssertFlagArgProvided(config.User, "-user")
+	AssertFlagArgProvided(config.Token, "-token")
 
 	if config.Interval != 0 && config.Interval < time.Second {
 		fmt.Fprintln(os.Stderr, "error: argument for flag -interval cannot be shorter than 1s")
 		os.Exit(2)
 	}
 
-	config.URL = fmt.Sprintf(config.URL, config.Domain, config.User)
+	if !IsFlagArgProvided("url") && !IsEnvVarProvided("BODASH_URL") {
+		AssertFlagArgProvided(config.Domain, "-domain")
+		config.URL = fmt.Sprintf(config.URL, config.Domain, config.User)
+	}
 
 	if config.Debug {
 		fmt.Println("debug:", config.Debug)
@@ -320,9 +324,25 @@ func AssertFlagArgProvided(arg any, flag string) {
 	}
 }
 
+func IsFlagArgProvided(flagName string) bool {
+	isProvided := false
+	flag.Visit(func(f *flag.Flag) {
+		if flagName == f.Name {
+			isProvided = true
+			return
+		}
+	})
+	return isProvided
+}
+
+func IsEnvVarProvided(key string) bool {
+	_, isProvided := os.LookupEnv(key)
+	return isProvided
+}
+
 func ReadConfigStrFromEnv(key string, destination *string) {
-	value := os.Getenv(key)
-	if !reflect.ValueOf(value).IsZero() {
+	if IsEnvVarProvided(key) {
+		value := os.Getenv(key)
 		*destination = value
 	}
 }

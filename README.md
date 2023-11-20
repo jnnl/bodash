@@ -32,13 +32,15 @@ $ go build
 
 Run `bodash --help` to get available configuration options.
 
-Required command line arguments are:
-- `-domain`: domain name of the Blue Ocean API instance you want to connect to
-- `-user`: Jenkins user whose favorites you want to query for job information
-- `-token`: API token for supplied Jenkins user
+These options must be provided, either as command line arguments or environment variables:
+- `-user` or `BODASH_USER`: Jenkins user whose favorites will be queried for job information.
+- `-token` or `BODASH_TOKEN`: API token for supplied Jenkins user.
 
-You can also set environment variables `BODASH_DOMAIN`, `BODASH_USER`, and `BODASH_TOKEN`.
-However, supplied command line arguments will always take precedence.
+Also, one of the following must be provided:
+- `-domain` or `BODASH_DOMAIN`: Blue Ocean instance domain name.
+- `-url` or `BODASH_URL`: Blue Ocean favorites url, overrides `-domain`.
+
+Note that provided command line arguments will always take precedence over corresponding environment variables.
 
 If you wish to run the dashboard in a periodically updating loop, specify the `-interval` along with a 1 second or greater [time.ParseDuration](https://pkg.go.dev/time#ParseDuration) compatible duration string.
 

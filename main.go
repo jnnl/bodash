@@ -82,7 +82,13 @@ func (job *Job) PrintDebugInfo() {
 }
 
 func main() {
-	ParseArgs()
+	var parse_err error
+	config, parse_err = ParseArgs(os.Args[1:])
+	if parse_err != nil {
+		fmt.Fprintln(os.Stderr, "error:", parse_err)
+		os.Exit(2)
+	}
+
 	if config.Interval == 0 {
 		FetchAndPrint()
 	} else {
@@ -90,45 +96,60 @@ func main() {
 	}
 }
 
-func ParseArgs() {
-	ReadConfigStrFromEnv("BODASH_URL", &config.URL)
-	ReadConfigStrFromEnv("BODASH_DOMAIN", &config.Domain)
-	ReadConfigStrFromEnv("BODASH_TOKEN", &config.Token)
-	ReadConfigStrFromEnv("BODASH_USER", &config.User)
+func ParseArgs(args []string) (Config, error) {
+	f := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+	cfg := config
 
-	flag.BoolVar(&config.Debug, "debug", config.Debug, "show debug info")
-	flag.StringVar(&config.URL, "url", config.URL, "Blue Ocean favorites url (e.g https://ci.example/blue/rest/users/mydashboarduser/favorites)")
-	flag.StringVar(&config.Domain, "domain", config.Domain, "Blue Ocean domain (e.g. ci.example)")
-	flag.BoolVar(&config.ShowHeader, "header", config.ShowHeader, "show dashboard header row")
-	flag.DurationVar(&config.Interval, "interval", config.Interval, "dashboard refresh interval")
-	flag.StringVar(&config.Token, "token", config.Token, "Blue Ocean user API token")
-	flag.StringVar(&config.User, "user", config.User, "Blue Ocean user")
-	flag.StringVar(&config.DateOutFormat, "dateoutformat", config.DateOutFormat, "header output date format")
-	flag.Parse()
+	ReadConfigStrFromEnv("BODASH_URL", &cfg.URL)
+	ReadConfigStrFromEnv("BODASH_DOMAIN", &cfg.Domain)
+	ReadConfigStrFromEnv("BODASH_TOKEN", &cfg.Token)
+	ReadConfigStrFromEnv("BODASH_USER", &cfg.User)
 
-	AssertFlagArgProvided(config.User, "-user")
-	AssertFlagArgProvided(config.Token, "-token")
+	f.BoolVar(&cfg.Debug, "debug", cfg.Debug, "show debug info")
+	f.StringVar(&cfg.URL, "url", cfg.URL, "Blue Ocean favorites url (e.g https://ci.example/blue/rest/users/mydashboarduser/favorites)")
+	f.StringVar(&cfg.Domain, "domain", cfg.Domain, "Blue Ocean domain (e.g. ci.example)")
+	f.BoolVar(&cfg.ShowHeader, "header", cfg.ShowHeader, "show dashboard header row")
+	f.DurationVar(&cfg.Interval, "interval", cfg.Interval, "dashboard refresh interval")
+	f.StringVar(&cfg.Token, "token", cfg.Token, "Blue Ocean user API token")
+	f.StringVar(&cfg.User, "user", cfg.User, "Blue Ocean user")
+	f.StringVar(&cfg.DateOutFormat, "dateoutformat", cfg.DateOutFormat, "header output date format")
 
-	if config.Interval != 0 && config.Interval < time.Second {
-		fmt.Fprintln(os.Stderr, "error: argument for flag -interval cannot be shorter than 1s")
-		os.Exit(2)
+	parse_err := f.Parse(args)
+	if parse_err != nil {
+		return Config{}, parse_err
 	}
 
-	if !IsFlagArgProvided("url") && !IsEnvVarProvided("BODASH_URL") {
-		AssertFlagArgProvided(config.Domain, "-domain")
-		config.URL = fmt.Sprintf(config.URL, config.Domain, config.User)
+	var required_err error
+	if required_err = AssertFlagArgProvided(cfg.User, "-user"); required_err != nil {
+		return Config{}, required_err
+	}
+	if required_err = AssertFlagArgProvided(cfg.Token, "-token"); required_err != nil {
+		return Config{}, required_err
 	}
 
-	if config.Debug {
-		fmt.Println("debug:", config.Debug)
-		fmt.Println("domain:", config.Domain)
-		fmt.Println("header:", config.ShowHeader)
-		fmt.Println("interval:", config.Interval)
-		fmt.Println("token:", config.Token)
-		fmt.Println("url:", config.URL)
-		fmt.Println("user:", config.User)
-		fmt.Println("dateoutformat:", config.DateOutFormat)
+	if !IsFlagArgProvided(f, "url") && !IsEnvVarProvided("BODASH_URL") {
+		if required_err = AssertFlagArgProvided(cfg.Domain, "-domain"); required_err != nil {
+			return Config{}, required_err
+		}
+		cfg.URL = fmt.Sprintf(cfg.URL, cfg.Domain, cfg.User)
 	}
+
+	if cfg.Interval != 0 && cfg.Interval < time.Second {
+		return Config{}, errors.New("argument for flag -interval cannot be shorter than 1s")
+	}
+
+	if cfg.Debug {
+		fmt.Println("debug:", cfg.Debug)
+		fmt.Println("domain:", cfg.Domain)
+		fmt.Println("header:", cfg.ShowHeader)
+		fmt.Println("interval:", cfg.Interval)
+		fmt.Println("token:", cfg.Token)
+		fmt.Println("url:", cfg.URL)
+		fmt.Println("user:", cfg.User)
+		fmt.Println("dateoutformat:", cfg.DateOutFormat)
+	}
+
+	return cfg, nil
 }
 
 func RunDashboardLoop() {
@@ -317,16 +338,16 @@ func ColorizedJobState(state string) string {
 	}
 }
 
-func AssertFlagArgProvided(arg any, flag string) {
+func AssertFlagArgProvided(arg any, flag string) error {
 	if reflect.ValueOf(arg).IsZero() {
-		fmt.Fprintln(os.Stderr, "error: missing required argument for flag", flag)
-		os.Exit(2)
+		return errors.New(fmt.Sprintf("missing required argument for flag %s", flag))
 	}
+	return nil
 }
 
-func IsFlagArgProvided(flagName string) bool {
+func IsFlagArgProvided(f *flag.FlagSet, flagName string) bool {
 	isProvided := false
-	flag.Visit(func(f *flag.Flag) {
+	f.Visit(func(f *flag.Flag) {
 		if flagName == f.Name {
 			isProvided = true
 			return

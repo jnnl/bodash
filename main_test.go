@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -85,7 +86,7 @@ func MockJobsResponse() []byte {
 
 func TestFetchJobs(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authString := "Basic ZGFzaGJvYXJkOg=="
+		authString := "Basic ZGFzaGJvYXJkOg==" // dashboard:<empty password>
 		if auth := r.Header.Get("Authorization"); auth != authString {
 			t.Errorf("Request header Authorization = %s, want %s\n", auth, authString)
 		}
@@ -193,4 +194,72 @@ func TestFormattedDurationString(t *testing.T) {
 	if durString := FormattedDurationString(timeString, referenceTime); durString != wantDur {
 		t.Errorf("FormattedDurationString(timeString, referenceTime) = %s, want %s\n", durString, wantDur)
 	}
+}
+
+func TestParseArgs(t *testing.T) {
+	tests := []struct {
+		args []string
+		cfg  Config
+	}{
+		{
+			[]string{},
+			Config{},
+		},
+		{
+			[]string{"-domain", "ci.example", "-user", "test_user"},
+			Config{Domain: "ci.example", User: "test_user", Token: "", Interval: must(time.ParseDuration("0s"))},
+		},
+		{
+			[]string{"-domain", "ci.example", "-token", "test_token"},
+			Config{Domain: "ci.example", User: "dashboard", Token: "test_token", Interval: must(time.ParseDuration("0s"))},
+		},
+		{
+			[]string{"-domain", "ci.example", "-user", "test_user", "-token", "test_token", "-interval", "12s"},
+			Config{Domain: "ci.example", User: "test_user", Token: "test_token", Interval: must(time.ParseDuration("12s"))},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(strings.Join(test.args, " "), func(t *testing.T) {
+			parsed_cfg, err := ParseArgs(test.args)
+
+			if parsed_cfg.Token == "" {
+				if err != nil && ErrorStringContains(err, "-token") {
+					return
+				}
+				t.Errorf("config.Token must be defined")
+			}
+			if parsed_cfg.User == "" {
+				if err != nil && ErrorStringContains(err, "-user") {
+					return
+				}
+				t.Errorf("config.User must be required")
+			}
+
+			if err != nil {
+				t.Errorf("uncaught error: %s\n", err)
+			}
+
+			if parsed_cfg.Domain != test.cfg.Domain {
+				t.Errorf("config.Domain = %s, want %s\n", parsed_cfg.Domain, test.cfg.Domain)
+			}
+			if parsed_cfg.Token != test.cfg.Token {
+				t.Errorf("config.Token = %s, want %s\n", parsed_cfg.Token, test.cfg.Token)
+			}
+			if parsed_cfg.User != test.cfg.User {
+				t.Errorf("config.User = %s, want %s\n", parsed_cfg.User, test.cfg.User)
+			}
+			if parsed_cfg.Interval != test.cfg.Interval {
+				t.Errorf("config.Interval = %s, want %s\n", parsed_cfg.Interval, test.cfg.Interval)
+			}
+		})
+	}
+}
+
+func ErrorStringContains(err error, want string) bool {
+	return strings.Contains(err.Error(), want)
+}
+
+func must[T any](val T, _ error) T {
+	return val
 }

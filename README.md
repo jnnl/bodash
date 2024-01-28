@@ -6,7 +6,7 @@ bodash (Blue Ocean dashboard) is a CLI dashboard for displaying Jenkins job stat
 
 By default, `bodash` queries `https://$BODASH_DOMAIN/blue/rest/users/$BODASH_USER/favorites` once and displays the received name, id, job state/result and either running job duration or relative finished job end time in a colorized tabular format.
 
-Here's an example:
+The dashboard looks something like this:
 
 ```
 Tue, 22 Feb 2022 22:22:22 UTC
@@ -43,6 +43,13 @@ Also, one of the following must be provided:
 Note that provided command line arguments will always take precedence over corresponding environment variables.
 
 If you wish to run the dashboard in a periodically updating loop, specify the `-interval` along with a 1 second or greater [time.ParseDuration](https://pkg.go.dev/time#ParseDuration) compatible duration string.
+
+Here's how to display a dashboard for jobs favorited in Blue Ocean as user `dashboard` on `ci.example.com`, refreshed every 5 seconds:
+
+```
+bodash -domain ci.example.com -user dashboard -token 0123456789ABCDEF -interval 5s
+```
+
 
 ## Notes
 
